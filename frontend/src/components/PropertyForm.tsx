@@ -41,7 +41,6 @@ export default function PropertyForm() {
     },
   })
 
-  // Fetch suggestions from Nominatim (free, no API key)
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     if (address.length < 5) {
@@ -71,7 +70,6 @@ export default function PropertyForm() {
     }, 350)
   }, [address])
 
-  // Close suggestions on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -110,8 +108,10 @@ export default function PropertyForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
-      <label className="block text-sm font-medium text-gray-700 mb-2">Property Address</label>
+    <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6">
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+        Property Address
+      </label>
       <div className="flex gap-3">
         <div className="relative flex-1" ref={wrapperRef}>
           <input
@@ -121,14 +121,14 @@ export default function PropertyForm() {
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             onKeyDown={handleKeyDown}
             placeholder="123 Main St, Austin, TX 78701"
-            className="w-full border border-gray-300 rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
           />
           {showSuggestions && suggestions.length > 0 && (
-            <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+            <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
               {suggestions.map((s, i) => (
                 <li
                   key={i}
-                  className={`px-4 py-2 text-sm cursor-pointer ${
+                  className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
                     i === highlightIdx ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-700'
                   }`}
                   onMouseDown={() => selectSuggestion(s)}
@@ -142,13 +142,21 @@ export default function PropertyForm() {
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="bg-blue-600 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+          className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap transition-colors"
         >
-          {mutation.isPending ? 'Analyzing...' : 'Run Analysis'}
+          {mutation.isPending ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Analyzing...
+            </span>
+          ) : 'Run Analysis'}
         </button>
       </div>
       {mutation.isError && (
-        <p className="text-red-500 text-sm mt-2">Analysis failed. Please try again.</p>
+        <p className="text-red-500 text-sm mt-3">Analysis failed. Please try again.</p>
       )}
     </form>
   )

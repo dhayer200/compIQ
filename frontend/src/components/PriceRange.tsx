@@ -14,20 +14,20 @@ export default function PriceRange({ label, low, mid, high }: Props) {
   const midPct = range > 0 ? ((mid - low) / range) * 100 : 50
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-sm font-medium text-gray-500 mb-1">{label}</h2>
+    <div className="bg-white rounded-xl border border-gray-200 p-6 print:border-0 print:shadow-none">
+      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{label}</h2>
       <p className="text-3xl font-bold text-gray-900 mb-4">{fmt(mid)}</p>
-      <div className="relative h-3 bg-gray-200 rounded-full">
+      <div className="relative h-2.5 bg-gray-100 rounded-full">
         <div
-          className="absolute h-3 bg-blue-200 rounded-full"
+          className="absolute h-2.5 bg-gradient-to-r from-blue-200 via-blue-400 to-blue-200 rounded-full"
           style={{ left: '0%', width: '100%' }}
         />
         <div
-          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow"
-          style={{ left: `${midPct}%`, transform: `translate(-50%, -50%)` }}
+          className="absolute top-1/2 w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-md"
+          style={{ left: `${midPct}%`, transform: 'translate(-50%, -50%)' }}
         />
       </div>
-      <div className="flex justify-between text-xs text-gray-500 mt-1">
+      <div className="flex justify-between text-xs text-gray-400 mt-2">
         <span>{fmt(low)}</span>
         <span>{fmt(high)}</span>
       </div>

@@ -9,7 +9,7 @@ from datetime import datetime
 from app.db import get_pool
 from app.models.property import PropertyInput, PropertyData
 from app.models.report import AnalysisResponse, RentEstimate
-from app.models.comp import EstimateResult
+from app.models.comp import CompProperty, EstimateResult
 from app.services.rentcast import rentcast
 from app.services.comps import run_comps_analysis
 from app.services.narrative import generate_report
@@ -17,49 +17,44 @@ from app.services.narrative import generate_report
 router = APIRouter()
 
 
-@router.post("/analysis")
-async def create_analysis(input: PropertyInput) -> AnalysisResponse:
-    # Fetch value estimate and rent concurrently (2 API calls instead of 3)
+async def _run_single_analysis(address: str, overrides: PropertyInput | None = None) -> AnalysisResponse:
+    """Core analysis pipeline — reused by single and batch endpoints."""
+    input_data = overrides or PropertyInput(address=address)
+
     value_result, rent_estimate = await asyncio.gather(
-        rentcast.get_value_estimate(input.address),
-        rentcast.get_rent_estimate(input.address),
+        rentcast.get_value_estimate(address),
+        rentcast.get_rent_estimate(address),
     )
 
     _, _, _, raw_comps, avg_dom, avm_subject = value_result
 
-    # Use subject property from AVM response
     if avm_subject:
         property_data = avm_subject
     else:
-        property_data = PropertyData(address=input.address)
+        property_data = PropertyData(address=address)
 
-    # If AVM subject is missing details (beds/baths/sqft), try /properties endpoint
     if property_data.bedrooms is None:
         try:
-            full_property = await rentcast.get_property(input.address)
+            full_property = await rentcast.get_property(address)
             for field in ("bedrooms", "bathrooms", "sqft", "lot_size", "year_built", "property_type", "county"):
                 if getattr(property_data, field) is None and getattr(full_property, field) is not None:
                     setattr(property_data, field, getattr(full_property, field))
         except Exception:
-            # /properties may 404 — not all addresses are in their DB
             pass
 
-    # Apply user overrides if provided
-    if input.bedrooms is not None:
-        property_data.bedrooms = input.bedrooms
-    if input.bathrooms is not None:
-        property_data.bathrooms = input.bathrooms
-    if input.sqft is not None:
-        property_data.sqft = input.sqft
-    if input.lot_size is not None:
-        property_data.lot_size = input.lot_size
-    if input.year_built is not None:
-        property_data.year_built = input.year_built
+    if input_data.bedrooms is not None:
+        property_data.bedrooms = input_data.bedrooms
+    if input_data.bathrooms is not None:
+        property_data.bathrooms = input_data.bathrooms
+    if input_data.sqft is not None:
+        property_data.sqft = input_data.sqft
+    if input_data.lot_size is not None:
+        property_data.lot_size = input_data.lot_size
+    if input_data.year_built is not None:
+        property_data.year_built = input_data.year_built
 
-    # Run comps engine
     selected_comps, estimate = run_comps_analysis(property_data, raw_comps)
 
-    # Generate narrative report
     narrative = generate_report(
         subject=property_data,
         comps=selected_comps,
@@ -68,10 +63,8 @@ async def create_analysis(input: PropertyInput) -> AnalysisResponse:
         days_on_market=avg_dom,
     )
 
-    # Save to database
     db = await get_pool()
 
-    # Save subject property
     prop_row = await db.fetchrow(
         """
         INSERT INTO properties (address, city, state, zip_code, county,
@@ -95,11 +88,10 @@ async def create_analysis(input: PropertyInput) -> AnalysisResponse:
         property_data.year_built,
         property_data.last_sale_date,
         property_data.last_sale_price,
-        None,  # raw_api_data
+        None,
     )
     prop_id = prop_row["id"]
 
-    # Save analysis
     analysis_row = await db.fetchrow(
         """
         INSERT INTO analyses (subject_property_id, estimated_value,
@@ -124,7 +116,6 @@ async def create_analysis(input: PropertyInput) -> AnalysisResponse:
     )
     analysis_id = analysis_row["id"]
 
-    # Save comp properties
     for comp in selected_comps:
         await db.execute(
             """
@@ -148,13 +139,10 @@ async def create_analysis(input: PropertyInput) -> AnalysisResponse:
             json.dumps(comp.adjustments) if comp.adjustments else None,
         )
 
-    # Reload comps with IDs
     comp_rows = await db.fetch(
         "SELECT * FROM comp_properties WHERE analysis_id = $1 ORDER BY correlation DESC",
         analysis_id,
     )
-
-    from app.models.comp import CompProperty
 
     response_comps = [
         CompProperty(
@@ -189,6 +177,68 @@ async def create_analysis(input: PropertyInput) -> AnalysisResponse:
     )
 
 
+@router.post("/analysis")
+async def create_analysis(input: PropertyInput) -> AnalysisResponse:
+    return await _run_single_analysis(input.address, input)
+
+
+# --- Batch analysis ---
+
+class BatchInput(BaseModel):
+    addresses: list[str]
+
+
+class BatchResultItem(BaseModel):
+    address: str
+    status: str  # "success" | "error"
+    analysis: AnalysisResponse | None = None
+    error: str | None = None
+
+
+class BatchResponse(BaseModel):
+    total: int
+    succeeded: int
+    failed: int
+    results: list[BatchResultItem]
+
+
+@router.post("/analysis/batch")
+async def batch_analysis(input: BatchInput) -> BatchResponse:
+    if len(input.addresses) > 25:
+        raise HTTPException(status_code=400, detail="Maximum 25 addresses per batch")
+
+    # Run analyses sequentially to avoid hammering the API
+    # (RentCast rate limits + we have 50 calls/month)
+    results: list[BatchResultItem] = []
+    for addr in input.addresses:
+        addr = addr.strip()
+        if not addr:
+            continue
+        try:
+            analysis = await _run_single_analysis(addr)
+            results.append(BatchResultItem(
+                address=addr,
+                status="success",
+                analysis=analysis,
+            ))
+        except Exception as e:
+            results.append(BatchResultItem(
+                address=addr,
+                status="error",
+                error=str(e),
+            ))
+
+    succeeded = sum(1 for r in results if r.status == "success")
+    return BatchResponse(
+        total=len(results),
+        succeeded=succeeded,
+        failed=len(results) - succeeded,
+        results=results,
+    )
+
+
+# --- Retrieve / list ---
+
 @router.get("/analysis/{analysis_id}")
 async def get_analysis(analysis_id: UUID) -> AnalysisResponse:
     db = await get_pool()
@@ -205,9 +255,6 @@ async def get_analysis(analysis_id: UUID) -> AnalysisResponse:
         "SELECT * FROM comp_properties WHERE analysis_id = $1 ORDER BY correlation DESC",
         analysis_id,
     )
-
-    from app.models.property import PropertyData
-    from app.models.comp import CompProperty
 
     subject = PropertyData(
         id=prop["id"],

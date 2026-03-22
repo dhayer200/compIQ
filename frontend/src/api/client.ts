@@ -77,3 +77,23 @@ export async function getRecentAnalyses(): Promise<AnalysisSummary[]> {
   const { data } = await api.get<AnalysisSummary[]>('/analyses')
   return data
 }
+
+// Batch analysis
+export interface BatchResultItem {
+  address: string
+  status: 'success' | 'error'
+  analysis: AnalysisResponse | null
+  error: string | null
+}
+
+export interface BatchResponse {
+  total: number
+  succeeded: number
+  failed: number
+  results: BatchResultItem[]
+}
+
+export async function runBatchAnalysis(addresses: string[]): Promise<BatchResponse> {
+  const { data } = await api.post<BatchResponse>('/analysis/batch', { addresses })
+  return data
+}

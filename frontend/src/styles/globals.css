@@ -6,4 +6,18 @@
   nav { display: none !important; }
   body { background: white !important; }
   main { max-width: 100% !important; padding: 0 !important; }
+
+  /* PDF report styles */
+  .pdf-report {
+    margin: 0 !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+  }
+
+  .pdf-report .fixed { display: none !important; }
+
+  @page {
+    margin: 0.5in;
+    size: letter;
+  }
 }
