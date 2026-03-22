@@ -1,3 +1,4 @@
+import ssl as _ssl
 import asyncpg
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
@@ -7,18 +8,32 @@ pool: asyncpg.Pool | None = None
 
 
 def _clean_database_url(url: str) -> str:
-    """Remove channel_binding param — asyncpg doesn't support it."""
+    """Strip channel_binding and sslmode from URL — we handle SSL via kwarg."""
     parsed = urlparse(url)
     params = parse_qs(parsed.query)
     params.pop("channel_binding", None)
+    params.pop("sslmode", None)
     clean_query = urlencode(params, doseq=True)
     return urlunparse(parsed._replace(query=clean_query))
 
 
 async def init_db() -> asyncpg.Pool:
     global pool
-    db_url = _clean_database_url(settings.database_url)
-    pool = await asyncpg.create_pool(db_url, min_size=2, max_size=10, ssl="require")
+    raw_url = settings.database_url
+    if not raw_url:
+        raise RuntimeError("DATABASE_URL is not set")
+
+    db_url = _clean_database_url(raw_url)
+    parsed = urlparse(db_url)
+    print(f"Connecting to database host: {parsed.hostname}")
+
+    # Create permissive SSL context for Neon
+    ssl_ctx = _ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = _ssl.CERT_NONE
+
+    pool = await asyncpg.create_pool(db_url, min_size=2, max_size=10, ssl=ssl_ctx)
+    print("Database pool initialized")
     return pool
 
 
