@@ -4,28 +4,46 @@ import { useNavigate } from 'react-router-dom'
 import { runAnalysis } from '../api/client'
 import { useAnalysisStore } from '../stores/analysisStore'
 
-interface Suggestion {
+const STATE_ABBREVS: Record<string, string> = {
+  'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR',
+  'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE',
+  'Florida': 'FL', 'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID',
+  'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS',
+  'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME', 'Maryland': 'MD',
+  'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS',
+  'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+  'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY',
+  'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK',
+  'Oregon': 'OR', 'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC',
+  'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT',
+  'Vermont': 'VT', 'Virginia': 'VA', 'Washington': 'WA', 'West Virginia': 'WV',
+  'Wisconsin': 'WI', 'Wyoming': 'WY', 'District of Columbia': 'DC',
+}
+
+interface NominatimResult {
   display_name: string
   address: {
     house_number?: string
     road?: string
     city?: string
     town?: string
+    village?: string
     state?: string
     postcode?: string
   }
 }
 
-function formatSuggestion(s: Suggestion): string {
+function formatAddress(s: NominatimResult): string {
   const a = s.address
   const street = [a.house_number, a.road].filter(Boolean).join(' ')
-  const city = a.city || a.town || ''
-  return [street, city, a.state, a.postcode].filter(Boolean).join(', ')
+  const city = a.city || a.town || a.village || ''
+  const state = a.state ? (STATE_ABBREVS[a.state] || a.state) : ''
+  return [street, city, [state, a.postcode].filter(Boolean).join(' ')].filter(Boolean).join(', ')
 }
 
 export default function PropertyForm() {
   const [address, setAddress] = useState('')
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const [suggestions, setSuggestions] = useState<NominatimResult[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [highlightIdx, setHighlightIdx] = useState(-1)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -43,7 +61,7 @@ export default function PropertyForm() {
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (address.length < 5) {
+    if (address.length < 3) {
       setSuggestions([])
       return
     }
@@ -60,14 +78,15 @@ export default function PropertyForm() {
         const resp = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
           headers: { 'Accept-Language': 'en' },
         })
-        const data: Suggestion[] = await resp.json()
-        setSuggestions(data.filter((s) => s.address?.road))
+        const data: NominatimResult[] = await resp.json()
+        // Only show results that have a street address
+        setSuggestions(data.filter((s) => s.address?.road && s.address?.house_number))
         setShowSuggestions(true)
         setHighlightIdx(-1)
       } catch {
         setSuggestions([])
       }
-    }, 350)
+    }, 300)
   }, [address])
 
   useEffect(() => {
@@ -80,8 +99,8 @@ export default function PropertyForm() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const selectSuggestion = (s: Suggestion) => {
-    setAddress(formatSuggestion(s))
+  const selectSuggestion = (s: NominatimResult) => {
+    setAddress(formatAddress(s))
     setShowSuggestions(false)
     setSuggestions([])
   }
@@ -125,17 +144,20 @@ export default function PropertyForm() {
           />
           {showSuggestions && suggestions.length > 0 && (
             <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
-              {suggestions.map((s, i) => (
-                <li
-                  key={i}
-                  className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
-                    i === highlightIdx ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-700'
-                  }`}
-                  onMouseDown={() => selectSuggestion(s)}
-                >
-                  {formatSuggestion(s)}
-                </li>
-              ))}
+              {suggestions.map((s, i) => {
+                const formatted = formatAddress(s)
+                return (
+                  <li
+                    key={i}
+                    className={`px-4 py-2.5 text-sm cursor-pointer transition-colors ${
+                      i === highlightIdx ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-700'
+                    }`}
+                    onMouseDown={() => selectSuggestion(s)}
+                  >
+                    {formatted}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

@@ -1,6 +1,9 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || '/api' })
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 120_000, // 2 min — Render free tier cold starts can be slow
+})
 
 export interface PropertyInput {
   address: string
