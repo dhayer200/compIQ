@@ -1,0 +1,242 @@
+{
+  "properties": {
+    "5012 Balcones Dr, Austin, TX 78731": {
+      "address": "5012 Balcones Dr",
+      "city": "Austin",
+      "state": "TX",
+      "zipCode": "78731",
+      "county": "Travis",
+      "latitude": 30.3456,
+      "longitude": -97.7522,
+      "propertyType": "Single Family",
+      "bedrooms": 3,
+      "bathrooms": 2.0,
+      "squareFootage": 1850,
+      "lotSize": 7500,
+      "yearBuilt": 1978,
+      "lastSaleDate": "2022-06-15",
+      "lastSalePrice": 485000
+    },
+    "2301 S 5th St, Austin, TX 78704": {
+      "address": "2301 S 5th St",
+      "city": "Austin",
+      "state": "TX",
+      "zipCode": "78704",
+      "county": "Travis",
+      "latitude": 30.2441,
+      "longitude": -97.7558,
+      "propertyType": "Single Family",
+      "bedrooms": 4,
+      "bathrooms": 2.5,
+      "squareFootage": 2200,
+      "lotSize": 6800,
+      "yearBuilt": 2005,
+      "lastSaleDate": "2023-03-20",
+      "lastSalePrice": 625000
+    }
+  },
+  "valuations": {
+    "5012 Balcones Dr, Austin, TX 78731": {
+      "price": 510000,
+      "priceRangeLow": 475000,
+      "priceRangeHigh": 545000,
+      "comparables": [
+        {
+          "address": "5100 Balcones Dr",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78731",
+          "squareFootage": 1920,
+          "bedrooms": 3,
+          "bathrooms": 2.0,
+          "lotSize": 7200,
+          "yearBuilt": 1982,
+          "salePrice": 520000,
+          "saleDate": "2025-11-10",
+          "distance": 0.3,
+          "correlation": 0.95,
+          "daysOnMarket": 22
+        },
+        {
+          "address": "4918 Balcones Dr",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78731",
+          "squareFootage": 1780,
+          "bedrooms": 3,
+          "bathrooms": 2.0,
+          "lotSize": 8100,
+          "yearBuilt": 1975,
+          "salePrice": 498000,
+          "saleDate": "2025-09-05",
+          "distance": 0.2,
+          "correlation": 0.93,
+          "daysOnMarket": 18
+        },
+        {
+          "address": "5204 Shoal Creek Blvd",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78731",
+          "squareFootage": 2050,
+          "bedrooms": 4,
+          "bathrooms": 2.5,
+          "lotSize": 7800,
+          "yearBuilt": 1985,
+          "salePrice": 565000,
+          "saleDate": "2026-01-12",
+          "distance": 0.8,
+          "correlation": 0.88,
+          "daysOnMarket": 35
+        },
+        {
+          "address": "5310 Grover Ave",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78731",
+          "squareFootage": 1650,
+          "bedrooms": 3,
+          "bathrooms": 1.5,
+          "lotSize": 6500,
+          "yearBuilt": 1970,
+          "salePrice": 465000,
+          "saleDate": "2025-12-20",
+          "distance": 0.6,
+          "correlation": 0.85,
+          "daysOnMarket": 28
+        },
+        {
+          "address": "4800 Crestway Dr",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78731",
+          "squareFootage": 1900,
+          "bedrooms": 3,
+          "bathrooms": 2.0,
+          "lotSize": 9000,
+          "yearBuilt": 1980,
+          "salePrice": 530000,
+          "saleDate": "2025-10-08",
+          "distance": 1.1,
+          "correlation": 0.82,
+          "daysOnMarket": 31
+        },
+        {
+          "address": "3401 Oakmont Blvd",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78731",
+          "squareFootage": 2300,
+          "bedrooms": 4,
+          "bathrooms": 3.0,
+          "lotSize": 10200,
+          "yearBuilt": 1990,
+          "salePrice": 610000,
+          "saleDate": "2025-08-15",
+          "distance": 1.5,
+          "correlation": 0.78,
+          "daysOnMarket": 42
+        }
+      ]
+    },
+    "2301 S 5th St, Austin, TX 78704": {
+      "price": 640000,
+      "priceRangeLow": 600000,
+      "priceRangeHigh": 680000,
+      "comparables": [
+        {
+          "address": "2415 S 5th St",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78704",
+          "squareFootage": 2100,
+          "bedrooms": 4,
+          "bathrooms": 2.5,
+          "lotSize": 6500,
+          "yearBuilt": 2008,
+          "salePrice": 635000,
+          "saleDate": "2026-01-20",
+          "distance": 0.2,
+          "correlation": 0.96,
+          "daysOnMarket": 15
+        },
+        {
+          "address": "2200 S 3rd St",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78704",
+          "squareFootage": 2350,
+          "bedrooms": 4,
+          "bathrooms": 3.0,
+          "lotSize": 7200,
+          "yearBuilt": 2010,
+          "salePrice": 670000,
+          "saleDate": "2025-11-05",
+          "distance": 0.4,
+          "correlation": 0.91,
+          "daysOnMarket": 20
+        },
+        {
+          "address": "1800 S 1st St",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78704",
+          "squareFootage": 1950,
+          "bedrooms": 3,
+          "bathrooms": 2.0,
+          "lotSize": 5800,
+          "yearBuilt": 2002,
+          "salePrice": 580000,
+          "saleDate": "2025-10-18",
+          "distance": 0.9,
+          "correlation": 0.86,
+          "daysOnMarket": 25
+        },
+        {
+          "address": "2600 Kinney Ave",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78704",
+          "squareFootage": 2250,
+          "bedrooms": 4,
+          "bathrooms": 2.5,
+          "lotSize": 7000,
+          "yearBuilt": 2006,
+          "salePrice": 650000,
+          "saleDate": "2025-12-01",
+          "distance": 0.5,
+          "correlation": 0.89,
+          "daysOnMarket": 19
+        },
+        {
+          "address": "2100 Wilson St",
+          "city": "Austin",
+          "state": "TX",
+          "zipCode": "78704",
+          "squareFootage": 2400,
+          "bedrooms": 4,
+          "bathrooms": 3.0,
+          "lotSize": 8000,
+          "yearBuilt": 2012,
+          "salePrice": 695000,
+          "saleDate": "2026-02-10",
+          "distance": 0.7,
+          "correlation": 0.84,
+          "daysOnMarket": 12
+        }
+      ]
+    }
+  },
+  "rentEstimates": {
+    "5012 Balcones Dr, Austin, TX 78731": {
+      "rent": 2400,
+      "rentRangeLow": 2150,
+      "rentRangeHigh": 2650
+    },
+    "2301 S 5th St, Austin, TX 78704": {
+      "rent": 3100,
+      "rentRangeLow": 2800,
+      "rentRangeHigh": 3400
+    }
+  }
+}
