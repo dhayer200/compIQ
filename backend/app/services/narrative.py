@@ -43,8 +43,8 @@ def generate_report(
 
 def _intro(subject: PropertyData, comps: list[CompProperty]) -> str:
     parts = []
-    if subject.bedrooms:
-        parts.append(f"{subject.bedrooms}-bedroom")
+    if subject.bedrooms is not None:
+        parts.append("studio" if subject.bedrooms == 0 else f"{subject.bedrooms}-bedroom")
     if subject.bathrooms:
         parts.append(f"{subject.bathrooms}-bathroom")
     desc = ", ".join(parts) if parts else "residential"

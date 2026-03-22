@@ -82,9 +82,9 @@ export default function ReportPage() {
           </button>
         </div>
         <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-600">
-          {data.subject.bedrooms && <span>{data.subject.bedrooms} bed</span>}
-          {data.subject.bathrooms && <span>{data.subject.bathrooms} bath</span>}
-          {data.subject.sqft && <span>{data.subject.sqft.toLocaleString()} sqft</span>}
+          {data.subject.bedrooms != null && <span>{data.subject.bedrooms === 0 ? 'Studio' : `${data.subject.bedrooms} bed`}</span>}
+          {data.subject.bathrooms != null && <span>{data.subject.bathrooms} bath</span>}
+          {data.subject.sqft != null && data.subject.sqft > 0 && <span>{data.subject.sqft.toLocaleString()} sqft</span>}
           {data.subject.year_built && <span>Built {data.subject.year_built}</span>}
         </div>
       </div>

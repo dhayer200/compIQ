@@ -35,7 +35,7 @@ export default function CompsTable({ comps }: { comps: CompProperty[] }) {
                     <span className="truncate">{c.address}</span>
                     <span className="px-4">{fmt(c.sale_price)}</span>
                     <span className="px-4">{c.sqft?.toLocaleString() ?? '-'}</span>
-                    <span className="px-4">{c.bedrooms ?? '-'}/{c.bathrooms ?? '-'}</span>
+                    <span className="px-4">{c.bedrooms === 0 ? 'Studio' : (c.bedrooms ?? '-')}/{c.bathrooms ?? '-'}</span>
                     <span className="px-4">{c.distance_miles?.toFixed(1) ?? '-'} mi</span>
                     <span className="px-4 font-medium">{fmt(c.adjusted_price)}</span>
                   </div>
