@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { useUser, SignUpButton } from '@clerk/react'
+import { useUser } from '@clerk/react'
 import { runBatchAnalysis, type BatchResultItem } from '../api/client'
 
 function fmt(n: number) {
@@ -57,11 +57,21 @@ export default function BatchPage() {
           <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto">
             Batch analysis is available on the Pro plan. Analyze up to 25 properties at once.
           </p>
-          <SignUpButton>
-            <button className="inline-block mt-6 bg-blue-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-              Upgrade to Pro — $29/mo
-            </button>
-          </SignUpButton>
+          <button
+            onClick={async () => {
+              const baseUrl = import.meta.env.VITE_API_URL || '/api'
+              const res = await fetch(`${baseUrl}/checkout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user?.primaryEmailAddress?.emailAddress }),
+              })
+              const data = await res.json()
+              if (data.url) window.location.href = data.url
+            }}
+            className="inline-block mt-6 bg-blue-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            Upgrade to Pro — $29/mo
+          </button>
         </div>
       </div>
     )
