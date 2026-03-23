@@ -279,24 +279,11 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <button
-                onClick={async () => {
-                  try {
-                    const res = await fetch('/api/checkout', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({}),
-                    })
-                    const data = await res.json()
-                    if (data.url) window.location.href = data.url
-                  } catch {
-                    window.location.href = '/signup'
-                  }
-                }}
-                className="block w-full text-center mt-8 bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-500 transition-colors text-sm"
-              >
-                Start Pro Trial
-              </button>
+              <SignUpButton>
+                <button className="block w-full text-center mt-8 bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-500 transition-colors text-sm">
+                  Start Pro Trial
+                </button>
+              </SignUpButton>
             </div>
           </div>
         </div>

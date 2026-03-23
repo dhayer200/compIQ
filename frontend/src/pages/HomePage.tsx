@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { useUser } from '@clerk/react'
 import PropertyForm from '../components/PropertyForm'
 import { getRecentAnalyses } from '../api/client'
+
+const FREE_MONTHLY_LIMIT = 5
 
 function fmt(n: number) {
   return '$' + n.toLocaleString()
@@ -18,10 +21,20 @@ function timeAgo(dateStr: string) {
 }
 
 export default function HomePage() {
+  const { user } = useUser()
+  const tier = (user?.publicMetadata as any)?.tier || 'free'
   const { data: recent } = useQuery({
     queryKey: ['recent-analyses'],
     queryFn: getRecentAnalyses,
   })
+
+  // Count analyses created this month
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
+  const monthlyCount = (recent || []).filter(
+    (a) => new Date(a.created_at).getTime() >= monthStart
+  ).length
+  const atLimit = tier !== 'pro' && monthlyCount >= FREE_MONTHLY_LIMIT
 
   return (
     <div className="space-y-10">
@@ -35,7 +48,24 @@ export default function HomePage() {
         </p>
       </div>
 
-      <PropertyForm />
+      {atLimit ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+          <p className="text-sm font-semibold text-gray-900">Monthly limit reached</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Free accounts get {FREE_MONTHLY_LIMIT} analyses per month. You've used {monthlyCount}.
+          </p>
+          <p className="text-xs text-gray-400 mt-3">Upgrade to Pro for unlimited analyses.</p>
+        </div>
+      ) : (
+        <>
+          {tier !== 'pro' && (
+            <p className="text-center text-xs text-gray-400 -mb-8">
+              {monthlyCount}/{FREE_MONTHLY_LIMIT} free analyses used this month
+            </p>
+          )}
+          <PropertyForm />
+        </>
+      )}
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
