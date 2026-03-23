@@ -26,7 +26,7 @@ export default function PDFReportPage() {
     return (
       <div className="text-center py-12">
         <p className="text-red-500 mb-4">Failed to load report.</p>
-        <Link to="/" className="text-blue-600 hover:underline text-sm">Back to home</Link>
+        <Link to="/app" className="text-blue-600 hover:underline text-sm">Back to home</Link>
       </div>
     )
   }
@@ -42,7 +42,7 @@ export default function PDFReportPage() {
       {/* Print button - hidden in print */}
       <div className="fixed top-4 right-4 z-50 print:hidden flex gap-2">
         <Link
-          to={`/report/${id}`}
+          to={`/app/report/${id}`}
           className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
         >
           Back to Report

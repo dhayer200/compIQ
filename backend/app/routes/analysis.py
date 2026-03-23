@@ -21,10 +21,16 @@ async def _run_single_analysis(address: str, overrides: PropertyInput | None = N
     """Core analysis pipeline — reused by single and batch endpoints."""
     input_data = overrides or PropertyInput(address=address)
 
-    value_result, rent_estimate = await asyncio.gather(
-        rentcast.get_value_estimate(address),
-        rentcast.get_rent_estimate(address),
-    )
+    try:
+        value_result, rent_estimate = await asyncio.gather(
+            rentcast.get_value_estimate(address),
+            rentcast.get_rent_estimate(address),
+        )
+    except Exception as e:
+        raise HTTPException(
+            422,
+            f"Could not find property data for that address. Check the address and try again. ({type(e).__name__})"
+        )
 
     _, _, _, raw_comps, avg_dom, avm_subject = value_result
 

@@ -40,7 +40,7 @@ export default function HomePage() {
       {/* Quick actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link
-          to="/batch"
+          to="/app/batch"
           className="group bg-white rounded-xl border border-gray-200 p-5 hover:border-blue-300 hover:shadow-sm transition-all"
         >
           <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center mb-3 group-hover:bg-blue-100 transition-colors">
@@ -81,7 +81,7 @@ export default function HomePage() {
             {recent.map((a) => (
               <Link
                 key={a.id}
-                to={`/report/${a.id}`}
+                to={`/app/report/${a.id}`}
                 className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors"
               >
                 <div className="min-w-0">

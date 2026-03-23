@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.db import init_db, close_db, run_migrations
 from app.routes.health import router as health_router
 from app.routes.analysis import router as analysis_router
+from app.routes.stripe import router as stripe_router
+from app.routes.auth import router as auth_router
 
 
 @asynccontextmanager
@@ -25,3 +27,5 @@ app.add_middleware(
 
 app.include_router(health_router, prefix="/api")
 app.include_router(analysis_router, prefix="/api")
+app.include_router(stripe_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")

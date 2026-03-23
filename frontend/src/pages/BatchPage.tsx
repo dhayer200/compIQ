@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { useUser } from '@clerk/react'
 import { runBatchAnalysis, type BatchResultItem } from '../api/client'
 
 function fmt(n: number) {
@@ -8,6 +9,8 @@ function fmt(n: number) {
 }
 
 export default function BatchPage() {
+  const { user } = useUser()
+  const tier = (user?.publicMetadata as any)?.tier || 'free'
   const [text, setText] = useState('')
   const [results, setResults] = useState<BatchResultItem[]>([])
   const mutation = useMutation({
@@ -34,6 +37,46 @@ export default function BatchPage() {
   }
 
   const addressCount = text.split('\n').map((l) => l.trim()).filter(Boolean).length
+
+  if (tier !== 'pro') {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Batch Analysis</h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Run comps analysis on multiple properties at once.
+          </p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+          <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900">Pro feature</h2>
+          <p className="text-sm text-gray-500 mt-2 max-w-sm mx-auto">
+            Batch analysis is available on the Pro plan. Analyze up to 25 properties at once.
+          </p>
+          <button
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/checkout', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({}),
+                })
+                const data = await res.json()
+                if (data.url) window.location.href = data.url
+              } catch { /* ignore */ }
+            }}
+            className="inline-block mt-6 bg-blue-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            Upgrade to Pro — $29/mo
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -155,7 +198,7 @@ export default function BatchPage() {
                     <td className="px-4 py-3">
                       {r.analysis && (
                         <Link
-                          to={`/report/${r.analysis.id}`}
+                          to={`/app/report/${r.analysis.id}`}
                           className="text-blue-600 hover:text-blue-800 text-xs font-medium"
                         >
                           View Report

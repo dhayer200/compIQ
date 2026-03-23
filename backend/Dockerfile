@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 COPY pyproject.toml .
-RUN pip install --no-cache-dir fastapi "uvicorn[standard]" asyncpg httpx pydantic pydantic-settings python-dotenv
+RUN pip install --no-cache-dir fastapi "uvicorn[standard]" asyncpg httpx pydantic pydantic-settings python-dotenv pyjwt bcrypt stripe
 
 COPY app/ app/
 COPY seed/ seed/

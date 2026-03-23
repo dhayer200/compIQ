@@ -53,7 +53,7 @@ export default function ReportPage() {
     return (
       <div className="text-center py-12">
         <p className="text-red-500 mb-4">Failed to load analysis.</p>
-        <Link to="/" className="text-blue-600 hover:underline text-sm">Back to home</Link>
+        <Link to="/app" className="text-blue-600 hover:underline text-sm">Back to home</Link>
       </div>
     )
   }
@@ -71,7 +71,7 @@ export default function ReportPage() {
           </div>
           <div className="flex gap-2 print:hidden">
             <Link
-              to={`/report/${id}/pdf`}
+              to={`/app/report/${id}/pdf`}
               className="inline-flex items-center gap-1.5 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -124,12 +124,12 @@ export default function ReportPage() {
       <NarrativeReport text={data.narrative} />
 
       <div className="flex items-center justify-center gap-4 print:hidden pt-2">
-        <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+        <Link to="/app" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
           Run another analysis
         </Link>
         <span className="text-gray-300">|</span>
         <Link
-          to={`/report/${id}/pdf`}
+          to={`/app/report/${id}/pdf`}
           className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
         >
           Export as PDF

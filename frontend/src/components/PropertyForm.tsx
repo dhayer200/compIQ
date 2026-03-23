@@ -55,7 +55,7 @@ export default function PropertyForm() {
     mutationFn: runAnalysis,
     onSuccess: (data) => {
       setCurrent(data)
-      navigate(`/report/${data.id}`)
+      navigate(`/app/report/${data.id}`)
     },
   })
 
@@ -119,11 +119,41 @@ export default function PropertyForm() {
     }
   }
 
+  const normalizeAddress = (raw: string): string => {
+    let addr = raw.trim()
+    // Collapse multiple spaces
+    addr = addr.replace(/\s+/g, ' ')
+    // Common abbreviations people forget
+    const abbrevs: [RegExp, string][] = [
+      [/\bstreet\b/i, 'St'],
+      [/\bavenue\b/i, 'Ave'],
+      [/\bboulevard\b/i, 'Blvd'],
+      [/\bdrive\b/i, 'Dr'],
+      [/\blane\b/i, 'Ln'],
+      [/\broad\b/i, 'Rd'],
+      [/\bcourt\b/i, 'Ct'],
+      [/\bplace\b/i, 'Pl'],
+      [/\bcircle\b/i, 'Cir'],
+    ]
+    for (const [pat, rep] of abbrevs) {
+      addr = addr.replace(pat, rep)
+    }
+    // Replace full state names with abbreviations
+    for (const [full, abbr] of Object.entries(STATE_ABBREVS)) {
+      const re = new RegExp(`\\b${full}\\b`, 'i')
+      if (re.test(addr)) {
+        addr = addr.replace(re, abbr)
+        break
+      }
+    }
+    return addr
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!address.trim()) return
     setShowSuggestions(false)
-    mutation.mutate({ address: address.trim() })
+    mutation.mutate({ address: normalizeAddress(address) })
   }
 
   return (
@@ -178,7 +208,9 @@ export default function PropertyForm() {
         </button>
       </div>
       {mutation.isError && (
-        <p className="text-red-500 text-sm mt-3">Analysis failed. Please try again.</p>
+        <p className="text-red-500 text-sm mt-3">
+          {(mutation.error as any)?.response?.data?.detail || 'Analysis failed. Check the address and try again.'}
+        </p>
       )}
     </form>
   )
