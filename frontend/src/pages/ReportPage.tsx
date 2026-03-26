@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { getAnalysis } from '../api/client'
+import { getAnalysis, getExportUrl } from '../api/client'
 import PriceRange from '../components/PriceRange'
 import CompsTable from '../components/CompsTable'
 import NarrativeReport from '../components/NarrativeReport'
@@ -72,13 +72,22 @@ export default function ReportPage() {
           <div className="flex gap-2 print:hidden">
             <Link
               to={`/app/report/${id}/pdf`}
-              className="inline-flex items-center gap-1.5 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+              className="inline-flex items-center gap-1.5 bg-gray-900 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-gray-800 transition-colors"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-              </svg>
-              Export PDF
+              PDF
             </Link>
+            <a
+              href={getExportUrl(id!, 'docx')}
+              className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+            >
+              DOCX
+            </a>
+            <a
+              href={getExportUrl(id!, 'md')}
+              className="inline-flex items-center gap-1.5 bg-gray-600 text-white px-3 py-2 rounded-lg text-xs font-medium hover:bg-gray-700 transition-colors"
+            >
+              MD
+            </a>
           </div>
         </div>
         <div className="flex flex-wrap gap-3 mt-3">
@@ -119,6 +128,46 @@ export default function ReportPage() {
         high={data.rent.range_high}
       />
 
+      {/* Cash Flow Potential + Acquisition */}
+      {(data.cash_flow_potential || data.acquisition) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {data.cash_flow_potential && (
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Current Cash Flow Potential</p>
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-2xl font-bold text-gray-900">
+                  ${data.cash_flow_potential.comp_price_low.toLocaleString()} &ndash; ${data.cash_flow_potential.comp_price_high.toLocaleString()}
+                </span>
+              </div>
+              <p className="text-sm text-gray-500">
+                Median comp: ${data.cash_flow_potential.median_price.toLocaleString()} &middot; Spread: ${(data.cash_flow_potential.comp_price_high - data.cash_flow_potential.comp_price_low).toLocaleString()}
+              </p>
+            </div>
+          )}
+          {data.acquisition && (data.acquisition.last_sale_date || data.acquisition.last_sale_price) && (
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Acquisition Data</p>
+              {data.acquisition.last_sale_price && (
+                <p className="text-2xl font-bold text-gray-900 mb-2">
+                  ${data.acquisition.last_sale_price.toLocaleString()}
+                </p>
+              )}
+              {data.acquisition.last_sale_date && (
+                <p className="text-sm text-gray-500">
+                  Last sold: {new Date(data.acquisition.last_sale_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              )}
+              {data.acquisition.last_sale_price && data.estimate.estimated_value > 0 && (
+                <p className="text-sm text-green-600 font-medium mt-1">
+                  {((data.estimate.estimated_value - data.acquisition.last_sale_price) / data.acquisition.last_sale_price * 100) > 0 ? '+' : ''}
+                  {((data.estimate.estimated_value - data.acquisition.last_sale_price) / data.acquisition.last_sale_price * 100).toFixed(1)}% since acquisition
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <MarketStats daysOnMarket={data.days_on_market} compsCount={data.comps.length} />
       <CompsTable comps={data.comps} />
       <NarrativeReport text={data.narrative} />
@@ -126,13 +175,6 @@ export default function ReportPage() {
       <div className="flex items-center justify-center gap-4 print:hidden pt-2">
         <Link to="/app" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
           Run another analysis
-        </Link>
-        <span className="text-gray-300">|</span>
-        <Link
-          to={`/app/report/${id}/pdf`}
-          className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
-        >
-          Export as PDF
         </Link>
       </div>
     </div>

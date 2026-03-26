@@ -1,5 +1,6 @@
 import asyncio
 import json
+import statistics as _stats
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
@@ -8,10 +9,10 @@ from datetime import datetime
 
 from app.db import get_pool
 from app.models.property import PropertyInput, PropertyData
-from app.models.report import AnalysisResponse, RentEstimate
+from app.models.report import AnalysisResponse, RentEstimate, CashFlowPotential, AcquisitionData
 from app.models.comp import CompProperty, EstimateResult
 from app.services.rentcast import rentcast
-from app.services.comps import run_comps_analysis
+from app.services.comps import run_comps_analysis, calculate_adjustments, compute_final_estimate, _detect_density
 from app.services.narrative import generate_report
 from app.services.markets import get_market, list_markets
 
@@ -177,6 +178,23 @@ async def _run_single_analysis(address: str, overrides: PropertyInput | None = N
 
     property_data.id = prop_id
 
+    # Cash flow potential from comp price range
+    comp_prices = [c.sale_price for c in response_comps if c.sale_price]
+    cfp = None
+    if comp_prices:
+        cfp = CashFlowPotential(
+            comp_price_low=min(comp_prices),
+            comp_price_high=max(comp_prices),
+            median_price=int(_stats.median(comp_prices)),
+        )
+
+    acq = None
+    if property_data.last_sale_date or property_data.last_sale_price:
+        acq = AcquisitionData(
+            last_sale_date=str(property_data.last_sale_date) if property_data.last_sale_date else None,
+            last_sale_price=property_data.last_sale_price,
+        )
+
     return AnalysisResponse(
         id=analysis_id,
         subject=property_data,
@@ -185,6 +203,8 @@ async def _run_single_analysis(address: str, overrides: PropertyInput | None = N
         days_on_market=avg_dom,
         comps=response_comps,
         narrative=narrative,
+        cash_flow_potential=cfp,
+        acquisition=acq,
         created_at=analysis_row["created_at"],
     )
 
@@ -309,6 +329,22 @@ async def get_analysis(analysis_id: UUID) -> AnalysisResponse:
         for r in comp_rows
     ]
 
+    comp_prices = [c.sale_price for c in comps if c.sale_price]
+    cfp = None
+    if comp_prices:
+        cfp = CashFlowPotential(
+            comp_price_low=min(comp_prices),
+            comp_price_high=max(comp_prices),
+            median_price=int(_stats.median(comp_prices)),
+        )
+
+    acq = None
+    if subject.last_sale_date or subject.last_sale_price:
+        acq = AcquisitionData(
+            last_sale_date=str(subject.last_sale_date) if subject.last_sale_date else None,
+            last_sale_price=subject.last_sale_price,
+        )
+
     return AnalysisResponse(
         id=row["id"],
         subject=subject,
@@ -325,6 +361,8 @@ async def get_analysis(analysis_id: UUID) -> AnalysisResponse:
         days_on_market=row["est_days_on_market"],
         comps=comps,
         narrative=row["narrative_text"],
+        cash_flow_potential=cfp,
+        acquisition=acq,
         created_at=row["created_at"],
     )
 
@@ -363,3 +401,201 @@ async def list_analyses() -> list[AnalysisSummary]:
         )
         for r in rows
     ]
+
+
+# --- Manual comp import ---
+
+class ManualComp(BaseModel):
+    address: str
+    sale_price: int
+    sale_date: str | None = None
+    bedrooms: int | None = None
+    bathrooms: float | None = None
+    sqft: int | None = None
+    lot_size: int | None = None
+    year_built: int | None = None
+    property_type: str | None = None
+    status: str | None = None  # "active", "under_contract", "expired", "sold"
+
+
+class CustomAnalysisInput(BaseModel):
+    address: str
+    market: str | None = None
+    bedrooms: int | None = None
+    bathrooms: float | None = None
+    sqft: int | None = None
+    lot_size: int | None = None
+    year_built: int | None = None
+    manual_comps: list[ManualComp]
+
+
+@router.post("/analysis/custom")
+async def custom_analysis(input: CustomAnalysisInput) -> AnalysisResponse:
+    """Run analysis with user-provided comps (actives, expireds, under contract, etc.)."""
+    if not input.address.strip():
+        raise HTTPException(422, "Address is required.")
+    if not input.manual_comps:
+        raise HTTPException(422, "At least one comparable property is required.")
+
+    address = input.address.strip()
+
+    # Try to get subject property data from RentCast (free if cached)
+    try:
+        full_property = await rentcast.get_property(address)
+        property_data = full_property
+    except Exception:
+        property_data = PropertyData(address=address)
+
+    # Apply overrides
+    for field in ("bedrooms", "bathrooms", "sqft", "lot_size", "year_built"):
+        val = getattr(input, field, None)
+        if val is not None:
+            setattr(property_data, field, val)
+
+    # Try to get rent estimate
+    try:
+        rent_estimate = await rentcast.get_rent_estimate(address)
+    except Exception:
+        from app.models.report import RentEstimate as RE
+        rent_estimate = RE(rent=0, range_low=0, range_high=0)
+
+    # Convert manual comps to CompProperty objects
+    from datetime import date as _date
+    raw_comps = []
+    for mc_input in input.manual_comps:
+        sale_date = None
+        if mc_input.sale_date:
+            try:
+                sale_date = _date.fromisoformat(mc_input.sale_date)
+            except ValueError:
+                pass
+
+        raw_comps.append(CompProperty(
+            address=mc_input.address,
+            sale_price=mc_input.sale_price,
+            sale_date=sale_date,
+            bedrooms=mc_input.bedrooms,
+            bathrooms=mc_input.bathrooms,
+            sqft=mc_input.sqft,
+            lot_size=mc_input.lot_size,
+            year_built=mc_input.year_built,
+            property_type=mc_input.property_type,
+            correlation=0.95,  # Manual comps are assumed to be good picks
+        ))
+
+    mc = get_market(market_key=input.market, city=property_data.city)
+
+    # Run the engine on user-provided comps
+    density = _detect_density(raw_comps)
+    for comp in raw_comps:
+        result = calculate_adjustments(property_data, comp, mc, density)
+        comp.adjusted_price = result.adjusted_price
+        comp.adjustments = result.adjustments
+
+    estimate = compute_final_estimate(raw_comps)
+
+    narrative = generate_report(
+        subject=property_data,
+        comps=raw_comps,
+        estimate=estimate,
+        rent=rent_estimate,
+        days_on_market=None,
+    )
+
+    # Store in DB
+    db = await get_pool()
+
+    prop_row = await db.fetchrow(
+        """
+        INSERT INTO properties (address, city, state, zip_code, county,
+            latitude, longitude, property_type, bedrooms, bathrooms,
+            sqft, lot_size, year_built, last_sale_date, last_sale_price, raw_api_data)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        RETURNING id
+        """,
+        property_data.address,
+        property_data.city,
+        property_data.state,
+        property_data.zip_code,
+        getattr(property_data, "county", None),
+        property_data.latitude,
+        property_data.longitude,
+        property_data.property_type,
+        property_data.bedrooms,
+        property_data.bathrooms,
+        property_data.sqft,
+        property_data.lot_size,
+        property_data.year_built,
+        property_data.last_sale_date,
+        property_data.last_sale_price,
+        None,
+    )
+    prop_id = prop_row["id"]
+
+    analysis_row = await db.fetchrow(
+        """
+        INSERT INTO analyses (subject_property_id, estimated_value,
+            value_range_low, value_range_high, estimated_rent,
+            rent_range_low, rent_range_high, est_days_on_market,
+            adjustments_json, narrative_text)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        RETURNING id, created_at
+        """,
+        prop_id,
+        estimate.estimated_value,
+        estimate.range_low,
+        estimate.range_high,
+        rent_estimate.rent,
+        rent_estimate.range_low,
+        rent_estimate.range_high,
+        None,
+        json.dumps({c.address: c.adjustments for c in raw_comps if c.adjustments}),
+        narrative,
+    )
+    analysis_id = analysis_row["id"]
+
+    for comp in raw_comps:
+        await db.execute(
+            """
+            INSERT INTO comp_properties (analysis_id, address, sale_price,
+                sale_date, bedrooms, bathrooms, sqft, lot_size, year_built,
+                property_type, distance_miles, correlation, adjusted_price, adjustments)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+            """,
+            analysis_id, comp.address, comp.sale_price, comp.sale_date,
+            comp.bedrooms, comp.bathrooms, comp.sqft, comp.lot_size,
+            comp.year_built, comp.property_type, comp.distance_miles,
+            comp.correlation, comp.adjusted_price,
+            json.dumps(comp.adjustments) if comp.adjustments else None,
+        )
+
+    property_data.id = prop_id
+
+    comp_prices = [c.sale_price for c in raw_comps if c.sale_price]
+    cfp = None
+    if comp_prices:
+        cfp = CashFlowPotential(
+            comp_price_low=min(comp_prices),
+            comp_price_high=max(comp_prices),
+            median_price=int(_stats.median(comp_prices)),
+        )
+
+    acq = None
+    if property_data.last_sale_date or property_data.last_sale_price:
+        acq = AcquisitionData(
+            last_sale_date=str(property_data.last_sale_date) if property_data.last_sale_date else None,
+            last_sale_price=property_data.last_sale_price,
+        )
+
+    return AnalysisResponse(
+        id=analysis_id,
+        subject=property_data,
+        estimate=estimate,
+        rent=rent_estimate,
+        days_on_market=None,
+        comps=raw_comps,
+        narrative=narrative,
+        cash_flow_potential=cfp,
+        acquisition=acq,
+        created_at=analysis_row["created_at"],
+    )

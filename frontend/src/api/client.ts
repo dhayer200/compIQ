@@ -44,6 +44,17 @@ export interface CompProperty {
   adjustments: Record<string, number> | null
 }
 
+export interface CashFlowPotential {
+  comp_price_low: number
+  comp_price_high: number
+  median_price: number
+}
+
+export interface AcquisitionData {
+  last_sale_date: string | null
+  last_sale_price: number | null
+}
+
 export interface AnalysisResponse {
   id: string
   subject: {
@@ -70,6 +81,8 @@ export interface AnalysisResponse {
   days_on_market: number | null
   comps: CompProperty[]
   narrative: string
+  cash_flow_potential: CashFlowPotential | null
+  acquisition: AcquisitionData | null
   created_at: string | null
 }
 
@@ -113,4 +126,40 @@ export interface BatchResponse {
 export async function runBatchAnalysis(addresses: string[]): Promise<BatchResponse> {
   const { data } = await api.post<BatchResponse>('/analysis/batch', { addresses })
   return data
+}
+
+// Manual comp import
+export interface ManualComp {
+  address: string
+  sale_price: number
+  sale_date?: string
+  bedrooms?: number
+  bathrooms?: number
+  sqft?: number
+  lot_size?: number
+  year_built?: number
+  property_type?: string
+  status?: string  // "active", "under_contract", "expired", "sold"
+}
+
+export interface CustomAnalysisInput {
+  address: string
+  market?: string
+  bedrooms?: number
+  bathrooms?: number
+  sqft?: number
+  lot_size?: number
+  year_built?: number
+  manual_comps: ManualComp[]
+}
+
+export async function runCustomAnalysis(input: CustomAnalysisInput): Promise<AnalysisResponse> {
+  const { data } = await api.post<AnalysisResponse>('/analysis/custom', input)
+  return data
+}
+
+// Export
+export function getExportUrl(analysisId: string, format: 'md' | 'docx'): string {
+  const base = import.meta.env.VITE_API_URL || '/api'
+  return `${base}/analysis/${analysisId}/export/${format}`
 }
