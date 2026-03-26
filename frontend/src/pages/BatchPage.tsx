@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useUser } from '@clerk/react'
 import { runBatchAnalysis, type BatchResultItem } from '../api/client'
+import { getUserTier } from '../lib/tier'
 
 function fmt(n: number) {
   return '$' + n.toLocaleString()
@@ -10,7 +11,7 @@ function fmt(n: number) {
 
 export default function BatchPage() {
   const { user } = useUser()
-  const tier = (user?.publicMetadata as any)?.tier || 'free'
+  const tier = getUserTier(user)
   const [text, setText] = useState('')
   const [results, setResults] = useState<BatchResultItem[]>([])
   const mutation = useMutation({

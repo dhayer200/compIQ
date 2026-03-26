@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useUser } from '@clerk/react'
 import PropertyForm from '../components/PropertyForm'
 import { getRecentAnalyses } from '../api/client'
+import { getUserTier } from '../lib/tier'
 
 const FREE_MONTHLY_LIMIT = 5
 
@@ -22,7 +23,7 @@ function timeAgo(dateStr: string) {
 
 export default function HomePage() {
   const { user } = useUser()
-  const tier = (user?.publicMetadata as any)?.tier || 'free'
+  const tier = getUserTier(user)
   const { data: recent } = useQuery({
     queryKey: ['recent-analyses'],
     queryFn: getRecentAnalyses,
