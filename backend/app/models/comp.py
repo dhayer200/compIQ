@@ -13,6 +13,7 @@ class CompProperty(BaseModel):
     sqft: int | None = None
     lot_size: int | None = None
     year_built: int | None = None
+    property_type: str | None = None
     distance_miles: float | None = None
     correlation: float | None = None
     adjusted_price: int | None = None

@@ -131,8 +131,8 @@ async def _run_single_analysis(address: str, overrides: PropertyInput | None = N
             """
             INSERT INTO comp_properties (analysis_id, address, sale_price,
                 sale_date, bedrooms, bathrooms, sqft, lot_size, year_built,
-                distance_miles, correlation, adjusted_price, adjustments)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+                property_type, distance_miles, correlation, adjusted_price, adjustments)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
             """,
             analysis_id,
             comp.address,
@@ -143,6 +143,7 @@ async def _run_single_analysis(address: str, overrides: PropertyInput | None = N
             comp.sqft,
             comp.lot_size,
             comp.year_built,
+            comp.property_type,
             comp.distance_miles,
             comp.correlation,
             comp.adjusted_price,
@@ -165,6 +166,7 @@ async def _run_single_analysis(address: str, overrides: PropertyInput | None = N
             sqft=r["sqft"],
             lot_size=r["lot_size"],
             year_built=r["year_built"],
+            property_type=r.get("property_type"),
             distance_miles=float(r["distance_miles"]) if r["distance_miles"] else None,
             correlation=float(r["correlation"]) if r["correlation"] else None,
             adjusted_price=r["adjusted_price"],
@@ -298,6 +300,7 @@ async def get_analysis(analysis_id: UUID) -> AnalysisResponse:
             sqft=r["sqft"],
             lot_size=r["lot_size"],
             year_built=r["year_built"],
+            property_type=r.get("property_type"),
             distance_miles=float(r["distance_miles"]) if r["distance_miles"] else None,
             correlation=float(r["correlation"]) if r["correlation"] else None,
             adjusted_price=r["adjusted_price"],

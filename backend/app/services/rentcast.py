@@ -53,6 +53,7 @@ def _parse_comp(raw: dict) -> CompProperty:
         sqft=raw.get("squareFootage"),
         lot_size=raw.get("lotSize"),
         year_built=raw.get("yearBuilt"),
+        property_type=raw.get("propertyType"),
         distance_miles=raw.get("distance"),
         correlation=raw.get("correlation"),
     )
