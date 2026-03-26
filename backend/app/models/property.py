@@ -10,6 +10,7 @@ class PropertyInput(BaseModel):
     sqft: int | None = None
     lot_size: int | None = None
     year_built: int | None = None
+    market: str | None = None  # e.g. "austin", "dallas", "houston", "san_antonio"
 
 
 class PropertyData(BaseModel):

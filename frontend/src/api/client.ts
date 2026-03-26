@@ -12,6 +12,20 @@ export interface PropertyInput {
   sqft?: number
   lot_size?: number
   year_built?: number
+  market?: string
+}
+
+export interface MarketInfo {
+  key: string
+  name: string
+  price_per_sqft: number
+  price_per_bedroom: number
+  price_per_bathroom: number
+}
+
+export async function getMarkets(): Promise<MarketInfo[]> {
+  const { data } = await api.get<MarketInfo[]>('/markets')
+  return data
 }
 
 export interface CompProperty {

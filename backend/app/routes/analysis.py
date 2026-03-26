@@ -13,6 +13,7 @@ from app.models.comp import CompProperty, EstimateResult
 from app.services.rentcast import rentcast
 from app.services.comps import run_comps_analysis
 from app.services.narrative import generate_report
+from app.services.markets import get_market, list_markets
 
 router = APIRouter()
 
@@ -59,7 +60,10 @@ async def _run_single_analysis(address: str, overrides: PropertyInput | None = N
     if input_data.year_built is not None:
         property_data.year_built = input_data.year_built
 
-    selected_comps, estimate = run_comps_analysis(property_data, raw_comps)
+    # Resolve market constants: explicit choice > auto-detect from city
+    mc = get_market(market_key=input_data.market, city=property_data.city)
+
+    selected_comps, estimate = run_comps_analysis(property_data, raw_comps, mc)
 
     narrative = generate_report(
         subject=property_data,
@@ -185,7 +189,9 @@ async def _run_single_analysis(address: str, overrides: PropertyInput | None = N
 
 @router.post("/analysis")
 async def create_analysis(input: PropertyInput) -> AnalysisResponse:
-    return await _run_single_analysis(input.address, input)
+    if not input.address or not input.address.strip():
+        raise HTTPException(422, "Address is required.")
+    return await _run_single_analysis(input.address.strip(), input)
 
 
 # --- Batch analysis ---
@@ -325,6 +331,12 @@ class AnalysisSummary(BaseModel):
     address: str
     estimated_value: int
     created_at: datetime
+
+
+@router.get("/markets")
+async def get_markets():
+    """List all available market presets with their adjustment constants."""
+    return list_markets()
 
 
 @router.get("/analyses")

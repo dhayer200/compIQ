@@ -41,8 +41,17 @@ function formatAddress(s: NominatimResult): string {
   return [street, city, [state, a.postcode].filter(Boolean).join(' ')].filter(Boolean).join(', ')
 }
 
+const MARKET_OPTIONS = [
+  { key: '', label: 'Auto-detect' },
+  { key: 'austin', label: 'Austin' },
+  { key: 'dallas', label: 'Dallas-Fort Worth' },
+  { key: 'houston', label: 'Houston' },
+  { key: 'san_antonio', label: 'San Antonio' },
+]
+
 export default function PropertyForm() {
   const [address, setAddress] = useState('')
+  const [market, setMarket] = useState('')
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [highlightIdx, setHighlightIdx] = useState(-1)
@@ -153,14 +162,32 @@ export default function PropertyForm() {
     e.preventDefault()
     if (!address.trim()) return
     setShowSuggestions(false)
-    mutation.mutate({ address: normalizeAddress(address) })
+    mutation.mutate({ address: normalizeAddress(address), ...(market ? { market } : {}) })
   }
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6">
-      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-        Property Address
-      </label>
+      <div className="flex items-end gap-4 mb-4">
+        <div className="flex-1">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Property Address
+          </label>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Market
+          </label>
+          <select
+            value={market}
+            onChange={(e) => setMarket(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+          >
+            {MARKET_OPTIONS.map((m) => (
+              <option key={m.key} value={m.key}>{m.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
       <div className="flex gap-3">
         <div className="relative flex-1" ref={wrapperRef}>
           <input
